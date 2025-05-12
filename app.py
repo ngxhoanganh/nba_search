@@ -7,32 +7,19 @@ from modules.controller.postController import PostController
 from modules.controller.commentController import CommentController
 from datetime import datetime
 from data.text_data import unsure, non_nba
-from flask import Flask, render_template, request, jsonify, redirect, flash, send_file
+from flask import Flask, render_template, request, jsonify, redirect, flash, send_file, session
 import json
 from werkzeug.utils import secure_filename
 import os
+
 app = Flask(__name__)
-
-
+app.secret_key = 'your-secret-key'  # Thêm secret key để dùng session nếu cần
 
 UPLOAD_FOLDER = 'uploads/'
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(), 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # Giới hạn kích thước tệp (16 MB)
 
-
-"""
-Function to handle routing to home page.
-
-Parameters
-----------
-n/a
-
-Returns
--------
-HTML file
-    Rendering of HTML template for home page.
-"""
+# Các tuyến hiện có
 @app.route("/")
 def home():
     return render_template("home.html")
@@ -41,66 +28,18 @@ def home():
 def home2():
     return render_template("home.html")
 
-"""
-Function to handle routing to chatbox page.
-
-Parameters
-----------
-n/a
-
-Returns
--------
-HTML file
-    Rendering of HTML template for chatbox page
-"""
 @app.route("/chat")
 def chat():
     return render_template("chat.html")
 
-"""
-Function to render blogs page.
-
-Parameters
-----------
-n/a
-
-Returns
--------
-HTML file
-    Rendering of HTML template for blog page
-"""
 @app.route("/blog")
 def blog():
     return render_template("blogs.html")
 
-"""
-Function to handle routing to authors page.
-
-Parameters
-----------
-n/a
-
-Returns
--------
-HTML file
-    Rendering of HTML template for authors page
-"""
 @app.route("/authors")
 def authors():
     return render_template("authors.html")
 
-"""
-Function to handle routing to predictions page.
-
-Parameters
-----------
-n/a
-
-Returns
--------
-HTML file
-    Rendering of HTML template for predictions page
-"""
 @app.route("/predictions")
 def predictions():
     bracket = get_playoff_bracket()
@@ -109,49 +48,21 @@ def predictions():
     east_standings = get_standings("east")
     return render_template("predictions.html", bracket=bracket, west_standings=west_standings, east_standings=east_standings)
 
-"""
-Function to download requested blog for user.
-
-Parameters
-----------
-n/a
-
-Returns
--------
-HTML file
-    Rendering of HTML template for blog page.
-"""
 @app.route("/download/<string:id>", methods=['GET', 'POST'])
 def download(id):
     if id is None:
         self.Error(400)
     try:
-        blog_map ={
-            "1" : "https://drive.google.com/uc?export=download&id=13FmzW70fMMfTwrypxzJRG-J6woty8ePz", # Dog pic
-            "2" : "https://drive.google.com/uc?export=download&id=13FmzW70fMMfTwrypxzJRG-J6woty8ePz", # Dog pic
-            "3" : "https://drive.google.com/uc?export=download&id=13FmzW70fMMfTwrypxzJRG-J6woty8ePz"  # Dog pic
+        blog_map = {
+            "1": "https://drive.google.com/uc?export=download&id=13FmzW70fMMfTwrypxzJRG-J6woty8ePz",
+            "2": "https://drive.google.com/uc?export=download&id=13FmzW70fMMfTwrypxzJRG-J6woty8ePz",
+            "3": "https://drive.google.com/uc?export=download&id=13FmzW70fMMfTwrypxzJRG-J6woty8ePz"
         }
         return redirect(blog_map[id])
     except Exception as e:
         self.log.exception(e)
         self.Error(400)
 
-"""
-Function to handle POST request from user
-with embedded message. The message is then 
-passed to the chatbot and the response is returned 
-to user.
-
-Parameters
-----------
-request : json
-    The POST request sent from user sending a message
-
-Returns
--------
-Bot response : json
-    The chatbot response to user message
-"""
 @app.route("/bot-msg", methods=['POST'])
 def get_bot_response():
     usr_msg = request.form['msg']
@@ -159,12 +70,6 @@ def get_bot_response():
     response = handler.process()
     return jsonify(response)
 
-if __name__ == "__main__":
-    app.run()
-    
-    
-    
-# Tinh nang them
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -187,7 +92,9 @@ def register():
                 "message": "Đã xảy ra lỗi. Vui lòng thử lại!",
                 "status": "danger"
             }), 400
-            
+    else:  # GET
+        return render_template('register.html')
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -201,7 +108,7 @@ def login():
             return jsonify({
                 "message": "Đăng nhập thành công!",
                 "status": "success",
-                "user" : user.__dict__
+                "user": user.__dict__
             }), 200
         else:
             print("Tài khoản hoặc mật khẩu không đúng, vui lòng thử lại!")
@@ -209,7 +116,59 @@ def login():
                 "message": "Tài khoản hoặc mật khẩu không đúng, vui lòng thử lại!",
                 "status": "danger"
             }), 400
-            
+    else:  # GET
+        return render_template('login.html')
+
+@app.route('/logout', methods=['GET'])
+def logout():
+    print("Đăng xuất thành công!")
+    return redirect('/')
+
+@app.route('/getallposts', methods=['POST'])
+def get_posts():
+    data = request.get_json()
+    start = data.get('start', 0)
+    limit = data.get('limit', 10)
+    posts = PostController.get_posts(start, limit)
+    
+    if posts:
+        print("Lấy bài viết thành công!")
+        return jsonify({
+            "message": "Lấy bài viết thành công!",
+            "status": "success",
+            "posts": posts
+        }), 200
+    else:
+        print("Không có bài viết nào!")
+        return jsonify({
+            "message": "Không có bài viết nào!",
+            "status": "danger"
+        }), 400
+
+@app.route('/new_post', methods=['GET'])
+def new_post():
+    return render_template('new_post.html')
+
+@app.route('/post_detail', methods=['GET'])
+def post_detail():
+    post_id = request.args.get('post_id')
+    if not post_id:
+        print("Thiếu post_id!")
+        return jsonify({
+            "message": "Thiếu post_id!",
+            "status": "danger"
+        }), 400
+    post = PostController.get_post_by_id(post_id)
+    if post:
+        print("Lấy chi tiết bài viết thành công!")
+        return render_template('post_detail.html', post=post)
+    else:
+        print("Bài viết không tồn tại!")
+        return jsonify({
+            "message": "Bài viết không tồn tại!",
+            "status": "danger"
+        }), 404
+
 @app.route('/createpost', methods=['GET', 'POST'])
 def create_post():
     if request.method == 'POST':
@@ -244,9 +203,7 @@ def create_post():
                 "status": "danger"
             }), 400
 
-
-
-@app.route('/getpostbyid', methods=['GET'])
+@app.route('/getpostbyid', methods=['POST'])
 def get_post_by_id():
     data = request.get_json()
     postId = data.get('postId')
@@ -254,11 +211,10 @@ def get_post_by_id():
     post = PostController.get_post_by_id(postId)
     if post:
         print("Lấy bài viết thành công!")
-        
         return jsonify({
             "message": "Lấy bài viết thành công!",
             "status": "success",
-            "post" : post
+            "post": post
         }), 200
     else:
         print("Đã xảy ra lỗi. Vui lòng thử lại!")
@@ -266,29 +222,7 @@ def get_post_by_id():
             "message": "Đã xảy ra lỗi khi lấy bài viết. Vui lòng thử lại!",
             "status": "danger"
         }), 400
-@app.route('/getallposts', methods=['GET'])
-def get_posts():
-    data = request.get_json()
-    start = 0
-    limit = 10
-    start = data.get('start')
-    limit = data.get('limit')
-    post = PostController.get_posts(start, limit)
-    
-    if post:
-        print("Lấy bài viết thành công!")
-        return jsonify({
-            "message": "Lấy bài viết thành công!",
-            "status": "success",
-            "posts" : post
-        }), 200
-    else:
-        print("Đã xảy ra lỗi. Vui lòng thử lại!")
-        return jsonify({
-            "message": "Đã xảy ra lỗi khi lấy bài viết. Vui lòng thử lại!",
-            "status": "danger"
-        }), 400
-        
+
 @app.route('/comment/create', methods=['POST'])
 def create_comment():
     data = request.get_json()
@@ -309,6 +243,24 @@ def create_comment():
             "status": "danger"
         }), 500
 
+@app.route('/comments/<int:post_id>', methods=['GET'])
+def get_comments(post_id):
+    comments = CommentController.get_comments_by_post(post_id)
+    if comments:
+        print("Lấy bình luận thành công!")
+        return jsonify({
+            "message": "Lấy bình luận thành công!",
+            "status": "success",
+            "comments": comments
+        }), 200
+    else:
+        print("Chưa có bình luận nào!")
+        return jsonify({
+            "message": "Chưa có bình luận nào!",
+            "status": "success",
+            "comments": []
+        }), 200
+
 @app.route('/upvote', methods=['POST'])
 def upvote_post():
     data = request.get_json()
@@ -325,8 +277,11 @@ def upvote_post():
             "message": "Không thể upvote bài viết!",
             "status": "danger"
         }), 400
-        
+
 @app.route('/download/image/<filename>')
 def download_image(filename):
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     return send_file(filepath, mimetype='image/jpeg')
+
+if __name__ == "__main__":
+    app.run()

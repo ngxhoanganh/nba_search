@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <title>Blog - NBA Search</title>
+  <title>Chi tiết bài viết - NBA Search</title>
   <link rel="stylesheet" href="{{url_for('static', filename='css/bootstrap.min.css')}}">
   <link rel="stylesheet" href="{{url_for('static', filename='css/themify-icons.css')}}">
   <link rel="stylesheet" href="{{url_for('static', filename='css/style.css')}}">
@@ -16,42 +16,49 @@
       position: relative;
       animation: crowdCheer 12s infinite ease-in-out;
     }
-    .blog-section { padding: 50px 0; min-height: 100vh; }
-    .blog-container { max-width: 900px; margin: 0 auto; }
-    .blog-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-    .blog-header h2 { color: white; font-size: 2rem; font-weight: 700; }
-    .new-post-btn {
+    .post-detail-section { padding: 50px 0; min-height: 100vh; }
+    .post-detail-container {
+      max-width: 800px; margin: 0 auto; background: rgba(255, 255, 255, 0.98);
+      border-radius: 15px; padding: 30px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    }
+    .post-title { font-size: 2rem; font-weight: 700; color: #552583; margin-bottom: 15px; }
+    .post-meta { font-size: 0.9rem; color: #666; margin-bottom: 15px; }
+    .post-content { font-size: 1rem; color: #333; margin-bottom: 20px; }
+    .post-image { max-width: 100%; border-radius: 10px; margin-bottom: 20px; }
+    .upvote-btn {
+      background: linear-gradient(45deg, #552583, #FDB927); color: white; border: none;
+      padding: 8px 15px; border-radius: 25px; font-size: 0.9rem; font-family: monospace;
+      transition: all 0.3s ease;
+    }
+    .upvote-btn:hover {
+      background: linear-gradient(45deg, #FDB927, #552583); transform: scale(1.05);
+    }
+    .comment-section { margin-top: 30px; }
+    .comment { border-top: 1px solid #ddd; padding: 15px 0; }
+    .comment p { margin: 0; }
+    .comment-form { margin-top: 20px; }
+    .comment-form textarea { height: 100px; resize: vertical; font-family: monospace; }
+    .submit-btn {
       background: linear-gradient(45deg, #552583, #FDB927); color: white; border: none;
       padding: 10px 20px; border-radius: 25px; font-size: 1rem; font-family: monospace;
       transition: all 0.3s ease;
     }
-    .new-post-btn:hover {
+    .submit-btn:hover {
       background: linear-gradient(45deg, #FDB927, #552583); transform: scale(1.05);
     }
-    .post-card {
-      background: rgba(255, 255, 255, 0.98); border-radius: 15px; padding: 20px;
-      margin-bottom: 20px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-    }
-    .post-title { font-size: 1.5rem; font-weight: 700; color: #552583; margin-bottom: 10px; }
-    .post-meta { font-size: 0.9rem; color: #666; margin-bottom: 10px; }
-    .post-content {
-      font-size: 1rem; color: #333; margin-bottom: 15px;
-      display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
-      overflow: hidden; text-overflow: ellipsis;
-    }
-    .post-image { max-width: 100%; border-radius: 10px; margin-bottom: 15px; }
-    .read-more { color: #FDB927; font-weight: 700; text-decoration: none; }
-    .read-more:hover { color: #552583; }
-    .alert { margin-bottom: 20px; }
+    .alert { margin-bottom: 20px; padding: 10px; border-radius: 4px; }
+    .alert-success { background-color: #d4edda; color: #155724; }
+    .alert-danger { background-color: #f8d7da; color: #721c24; }
+    #comment-form { display: none; }
+    #comment-form.show { display: block; }
     @keyframes crowdCheer {
       0%, 100% { background-position: center center; }
       50% { background-position: center top; }
     }
     @media (max-width: 767px) {
-      .blog-container { padding: 0 15px; }
-      .blog-header h2 { font-size: 1.5rem; }
-      .new-post-btn { padding: 8px 15px; font-size: 0.9rem; }
-      .post-title { font-size: 1.3rem; }
+      .post-detail-container { padding: 20px; margin: 0 15px; }
+      .post-title { font-size: 1.5rem; }
+      .comment-form textarea { height: 80px; }
     }
   </style>
 </head>
@@ -121,15 +128,23 @@
     </div>
   </header>
 
-  <!-- Blog Section -->
-  <section class="blog-section">
-    <div class="blog-container">
-      <div class="blog-header">
-        <h2>Blog về NBA</h2>
-        <a href="/new_post.html" class="new-post-btn" id="new-post-btn" style="display:none;">Đăng bài mới</a>
+  <!-- Post Detail Section -->
+  <section class="post-detail-section">
+    <div class="post-detail-container">
+      <div id="post-message" class="alert" style="display:none;"></div>
+      <div id="post-detail"></div>
+      <div class="comment-section">
+        <h3>Bình luận</h3>
+        <div id="comments-container"></div>
+        <div id="comment-form" class="comment-form">
+          <form id="create-comment-form">
+            <div class="form-group">
+              <textarea class="form-control" id="comment-content" placeholder="Viết bình luận..." required></textarea>
+            </div>
+            <button type="submit" class="submit-btn">Gửi</button>
+          </form>
+        </div>
       </div>
-      <div id="posts-container"></div>
-      <div id="posts-message" class="alert" style="display:none;"></div>
     </div>
   </section>
 
