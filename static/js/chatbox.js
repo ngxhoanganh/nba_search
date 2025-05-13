@@ -19,40 +19,58 @@ window.alert = function(){};
 // Function to handle bot response 
 async function chatbotResponse() {
   talking = true;
-  botMessage = "I'm confused"; //the default message
+  botMessage = "I'm confused"; // Default message
 
-    const payload = new FormData();
-    payload.append('msg', lastUserMessage);
+  const payload = new FormData();
+  payload.append('msg', lastUserMessage);
 
-    for(var value of payload.values()) {
-      console.log(value);
-    }
-
+  try {
     const res = await fetch('/bot-msg', {
-        method: 'post',
-        body: payload
+      method: 'POST',
+      body: payload
     });
 
-    botMessage = await res.json();
+    const data = await res.json(); // Parse JSON response
+    botMessage = data || "I'm confused"; // Use the response directly
+  } catch (error) {
+    console.error('Error fetching bot response:', error);
+    botMessage = "Sorry, something went wrong.";
+  }
 }
 
 // Auto-scroll and update based on https://stackoverflow.com/a/39729993
 
-async function newmsg(){
-    var data = $("#btn-input").val();
+async function newmsg() {
+  const data = $("#btn-input").val();
 
-    $('chat_log').append('<div class="row msg_container base_sent"><div class="messages msg_sent"><p>'+data+'</p></div></div>');
-    clearInput();
-    lastUserMessage = String(data);
-    botMessage = 'TEST';
-    await chatbotResponse();
-    $('chat_log').append('<div class="row msg_container base_receive"><div class="messages msg_receive"><p>'+botMessage+'</p></div></div>')
+  // Append user message
+  $(".msg_container_base").append(`
+    <div class="row msg_container base_sent">
+      <div class="messages msg_sent">
+        <p>${data}</p>
+      </div>
+    </div>
+  `);
 
-    messages.push(data);
-    //Speech(botMessage) // Turned speech off, recommend adding a toggle switch so user can choose 
-    $(".msg_container_base").stop().animate({ scrollTop: $(".msg_container_base")[0].scrollHeight}, 1000);
+  clearInput();
+  lastUserMessage = String(data);
+
+  // Fetch bot response
+  await chatbotResponse();
+
+  // Append bot message
+  $(".msg_container_base").append(`
+    <div class="row msg_container base_receive">
+      <div class="messages msg_receive">
+        <p>${botMessage}</p>
+        <time>${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</time>
+      </div>
+    </div>
+  `);
+
+  // Scroll to the bottom
+  $(".msg_container_base").stop().animate({ scrollTop: $(".msg_container_base")[0].scrollHeight }, 1000);
 }
-
 
 $("#submit").click(async function() {
     newmsg();
@@ -60,12 +78,12 @@ $("#submit").click(async function() {
 
 function clearInput() {
     $("#myForm :input").each(function() {
-        $(this).val(''); //clears form
+        $(this).val(''); // Clears form
     });
 }
 
 $("#myForm").submit(function() {
-    return false; // do-nothing code to prevent redirection
+    return false; // Prevents redirection
 });
 
 // Function to convert text to speech
@@ -84,11 +102,18 @@ function keyPress(e) {
   var x = e || window.event;
   var key = (x.keyCode || x.which);
   if (key == 13 || key == 3) {
-    //runs this function when enter is pressed
+    e.preventDefault(); // ⬅️ chặn submit mặc định
     newmsg();
   }
-  if (key == 38) {
-    console.log('hi')
-      //document.getElementById("chatbox").value = lastUserMessage;
-  }
 }
+// Xử lý nút quick reply
+$(document).on("click", ".quick-reply-btn", function() {
+  console.log("Nút quick reply được nhấn:", $(this).data("message"));
+  let message = $(this).data("message");
+  if (message) {
+    $("#btn-input").val(message);
+    newmsg(); // Gọi trực tiếp newmsg thay vì submit form
+  } else {
+    console.error("Không tìm thấy data-message trên nút quick reply");
+  }
+});

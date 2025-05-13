@@ -66,8 +66,21 @@ def download(id):
 @app.route("/bot-msg", methods=['POST'])
 def get_bot_response():
     usr_msg = request.form['msg']
+    print(usr_msg)
+    # handler = Query(usr_msg)
+    # response = handler.process()
     handler = Query(usr_msg)
-    response = handler.process()
+    # Check if the query is related to NBA
+    classification = handler.classify_query(usr_msg)
+    if classification == "normal": 
+        response = handler.process_RAG()
+    elif classification == "compare":
+        response = handler.process_compare()
+    else:
+        response = handler.process_Top()
+        # response = "Không thể trả lời câu hỏi này. Vui lòng thử lại với câu hỏi khác."
+
+    print("Bot: ", response)
     return jsonify(response)
 
 @app.route('/register', methods=['GET', 'POST'])
