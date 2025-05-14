@@ -8,3 +8,8 @@ python-Levenshtein>=0.12.0
 matplotlib==3.3.2
 anytree
 mysql-connector-python>=8.0.0
+google-generativeai
+sentence-transformers
+faiss-cpu
+underthesea
+vncorenlp
